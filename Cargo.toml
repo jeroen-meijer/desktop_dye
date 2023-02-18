@@ -1,0 +1,3 @@
+[workspace]
+
+members = ["desktop_dye_cli", "home_assistant_api"]
