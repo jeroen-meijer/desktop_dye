@@ -9,7 +9,7 @@ use std::{
 const CONFIG_FILE_NAME: &str = "config.yaml";
 const DEFAULT_CONFIG_FILE_CONTENTS: &str = include_str!("../../assets/default_config.yaml");
 
-const DEFAULT_CAPTURE_INTERVAL: u64 = 5;
+const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
 
 #[optional_struct]
 #[derive(Debug, Deserialize)]
@@ -18,7 +18,7 @@ pub struct DesktopDyeConfig {
     pub ha_endpoint: String,
     pub ha_token: String,
     pub ha_target_entity_id: String,
-    pub capture_interval: u64,
+    pub capture_interval: f64,
     pub mode: ColorSelectionMode,
     pub hue_shift: f64,
 }
@@ -145,6 +145,23 @@ impl DesktopDyeConfig {
 
         if optional_config.ha_target_entity_id.is_none() {
             errors.push("Missing Home Assistant target entity ID in config file".to_string());
+        }
+
+        if let Some(capture_interval) = optional_config.capture_interval {
+            if capture_interval <= 0.0 {
+                errors.push(format!(
+                    "Capture interval must be greater than 0. Found {}",
+                    capture_interval
+                ));
+            } else if let Err(duration_err) =
+                std::time::Duration::try_from_secs_f64(capture_interval)
+            {
+                errors.push(format!(
+                    "Capture interval invalid. Cannot time out for amount of seconds provided. Found {}. Error: {}",
+                    capture_interval,
+                    duration_err
+                ));
+            }
         }
 
         errors

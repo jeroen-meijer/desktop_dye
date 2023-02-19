@@ -17,9 +17,14 @@ ha_token:
 # Is required. If not specified, the application will not start.
 ha_target_entity_id:
 
-# The number of seconds to wait between color captures.
-# Is optional. If not specified, the application will capture colors every 5 seconds.
-capture_interval: 1
+# The amount of seconds to wait between color captures.
+#
+# In other words, every this many seconds, the application will capture the colors on the
+# screen, and send them to Home Assistant (if it is not already sending colors, and if the
+# colors have changed).
+#
+# Is optional. If not specified, the application will capture colors every 3 seconds.
+capture_interval: 3.0
 
 # Selects the mode of color selection.
 #

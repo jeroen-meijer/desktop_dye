@@ -16,7 +16,8 @@ pub async fn capture_and_submit(
     api: &HomeAssistantApi,
     config: &DesktopDyeConfig,
     screen: &Screen,
-) -> Result<()> {
+    last_colors: Option<&Vec<Rgb<u8>>>,
+) -> Result<Vec<Rgb<u8>>> {
     let mut p = Progress::new("Capturing screen");
     let pixels = capture_pixels(screen).context("Failed to capture screen");
     if let Err(e) = pixels {
@@ -83,8 +84,15 @@ pub async fn capture_and_submit(
         );
     }
 
-    let colors_payload = final_colors
-        .into_iter()
+    if let Some(last_colors) = last_colors {
+        if last_colors == &final_colors {
+            println!("Colors haven't changed, skipping submission");
+            return Ok(final_colors);
+        }
+    }
+
+    let colors_payload = &final_colors
+        .iter()
         .map(|color| format!("{},{},{}", color.red(), color.green(), color.blue()))
         .collect::<Vec<_>>()
         .join(" ");
@@ -95,7 +103,7 @@ pub async fn capture_and_submit(
     let api_res = api
         .set_state(
             config.ha_target_entity_id.to_owned(),
-            colors_payload,
+            colors_payload.clone(),
             None,
             true,
         )
@@ -126,7 +134,7 @@ pub async fn capture_and_submit(
 
     p.success();
 
-    Ok(())
+    Ok(final_colors)
 }
 
 fn apply_color_mode(
