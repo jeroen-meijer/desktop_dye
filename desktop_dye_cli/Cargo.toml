@@ -1,6 +1,6 @@
 [package]
 name = "desktop_dye_cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Jeroen Meijer <jeroenfkmeijer@gmail.com>"]
 description = "A tool to generate color palettes from your desktop wallpaper and send them to Home Assistant."
