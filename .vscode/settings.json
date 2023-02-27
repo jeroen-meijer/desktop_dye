@@ -1,8 +1,10 @@
 {
   "cSpell.words": [
     "chrono",
+    "concatcp",
     "Datelike",
     "dotenv",
+    "kmeans",
     "maplit",
     "pigmnts",
     "sprintf",

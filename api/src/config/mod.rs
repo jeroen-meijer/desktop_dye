@@ -6,10 +6,16 @@ use std::{
     path::PathBuf,
 };
 
-const CONFIG_FILE_NAME: &str = "config.yaml";
-const DEFAULT_CONFIG_FILE_CONTENTS: &str = include_str!("../../assets/default_config.yaml");
+pub const CONFIG_FILE_NAME: &str = "config.yaml";
+pub const DEFAULT_CONFIG_FILE_CONTENTS: &str = include_str!("../../assets/default_config.yaml");
 
-const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
+pub const DEFAULT_SAMPLE_SIZE: u8 = 3;
+pub const DEFAULT_ALGORITHM: DominantColorAlgorithm = DominantColorAlgorithm::ColorThief;
+pub const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
+pub const DEFAULT_COLOR_SELECTION_MODE: ColorSelectionMode = ColorSelectionMode::Default;
+pub const DEFAULT_HUE_SHIFT: f64 = 45.0;
+
+pub const SAMPLE_SIZE_RANGE: std::ops::RangeInclusive<u8> = 1..=10;
 
 #[optional_struct]
 #[derive(Debug, Deserialize)]
@@ -18,6 +24,8 @@ pub struct DesktopDyeConfig {
     pub ha_endpoint: String,
     pub ha_token: String,
     pub ha_target_entity_id: String,
+    pub sample_size: u8,
+    pub algorithm: DominantColorAlgorithm,
     pub capture_interval: f64,
     pub mode: ColorSelectionMode,
     pub hue_shift: f64,
@@ -99,11 +107,13 @@ impl DesktopDyeConfig {
             ha_endpoint: optional_config.ha_endpoint.unwrap(),
             ha_token: optional_config.ha_token.unwrap(),
             ha_target_entity_id: optional_config.ha_target_entity_id.unwrap(),
+            sample_size: optional_config.sample_size.unwrap_or(DEFAULT_SAMPLE_SIZE),
+            algorithm: optional_config.algorithm.unwrap_or(DEFAULT_ALGORITHM),
             capture_interval: optional_config
                 .capture_interval
                 .unwrap_or(DEFAULT_CAPTURE_INTERVAL),
-            mode: optional_config.mode.unwrap_or(ColorSelectionMode::Default),
-            hue_shift: optional_config.hue_shift.unwrap_or(45.0),
+            mode: optional_config.mode.unwrap_or(DEFAULT_COLOR_SELECTION_MODE),
+            hue_shift: optional_config.hue_shift.unwrap_or(DEFAULT_HUE_SHIFT),
         })
     }
 
@@ -147,6 +157,17 @@ impl DesktopDyeConfig {
             errors.push("Missing Home Assistant target entity ID in config file".to_string());
         }
 
+        if let Some(sample_size) = optional_config.sample_size {
+            if !SAMPLE_SIZE_RANGE.contains(&sample_size) {
+                errors.push(format!(
+                    "Sample size must be between {} and {}. Found {}",
+                    SAMPLE_SIZE_RANGE.start(),
+                    SAMPLE_SIZE_RANGE.end(),
+                    sample_size
+                ));
+            }
+        }
+
         if let Some(capture_interval) = optional_config.capture_interval {
             if capture_interval <= 0.0 {
                 errors.push(format!(
@@ -186,4 +207,12 @@ impl Display for ColorSelectionMode {
             ColorSelectionMode::HueShift => write!(f, "Hue Shift"),
         }
     }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub enum DominantColorAlgorithm {
+    #[serde(rename = "color_thief")]
+    ColorThief,
+    #[serde(rename = "pigmnts")]
+    Pigmnts,
 }

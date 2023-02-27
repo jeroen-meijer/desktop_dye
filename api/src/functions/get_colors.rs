@@ -1,42 +1,27 @@
 use crate::config::ColorSelectionMode;
 use crate::config::DesktopDyeConfig;
 use crate::functions::*;
-use crate::progress::*;
 use angular_units::Deg;
 use anyhow::*;
 use colored::Colorize;
-use home_assistant_api::HomeAssistantApi;
 use prisma::Hsv;
 use prisma::Rgb;
 use screenshots::Screen;
 
 const BRIGHTNESS_THRESHOLD: f64 = 0.80;
 
-pub async fn capture_and_submit(
-    api: &HomeAssistantApi,
+pub async fn get_colors_from_screen(
     config: &DesktopDyeConfig,
     screen: &Screen,
-    last_colors: Option<&Vec<Rgb<u8>>>,
 ) -> Result<Vec<Rgb<u8>>> {
-    let mut p = Progress::new("Capturing screen");
-    let pixels = capture_pixels(screen).context("Failed to capture screen");
-    if let Err(e) = pixels {
-        p.fail();
-        return Err(e);
-    }
-    let pixels = pixels.unwrap();
-    p.success();
-
-    let mut p = Progress::new("Calculating dominant colors");
+    let pixels = capture_pixels(screen).context("Failed to capture screen")?;
     let dominant_colors =
-        calculate_dominant_colors(&pixels, super::DominantColorAlgorithm::ColorThief);
+        calculate_dominant_colors(&pixels, &config.algorithm, &config.sample_size);
     if dominant_colors.is_empty() {
-        p.fail();
         return Err(anyhow!(
             "Failed to calculate dominant colors, got 0 results"
         ));
     }
-    p.success();
 
     let dominant_colors = dominant_colors
         .into_iter()
@@ -64,77 +49,11 @@ pub async fn capture_and_submit(
             .to_string()
     );
 
-    let final_colors = apply_color_mode(dominant_colors, &config.mode, &config.hue_shift);
-
-    println!("Final colors:");
-    for color in &final_colors {
-        println!(
-            "  - {}",
-            format!(
-                "#{} ({}, {}, {})",
-                color.to_hex(),
-                color.red(),
-                color.green(),
-                color.blue(),
-            )
-            .bold()
-            .white()
-            .on_truecolor(color.red(), color.green(), color.blue())
-            .to_string()
-        );
-    }
-
-    if let Some(last_colors) = last_colors {
-        if last_colors == &final_colors {
-            println!("Colors haven't changed, skipping submission");
-            return Ok(final_colors);
-        }
-    }
-
-    let colors_payload = &final_colors
-        .iter()
-        .map(|color| format!("{},{},{}", color.red(), color.green(), color.blue()))
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    println!("Sending colors value: \"{}\"", colors_payload);
-
-    let mut p = Progress::new("Submitting colors to Home Assistant");
-    let api_res = api
-        .set_state(
-            config.ha_target_entity_id.to_owned(),
-            colors_payload.clone(),
-            None,
-            true,
-        )
-        .await
-        .context("Failed to submit colors to Home Assistant");
-
-    // let base_data: DataMap = hashmap! {
-    //   "rgb_color".into() => target_color.to_rgb_vec().iter().map(|v| serde_json::Value::Number((*v).into())).collect::<Vec<_>>().into(),
-    //   "transition".into() => 1.into(),
-    // };
-    // for entity_id in target_entity_ids {
-    //     let mut data = base_data.clone();
-    //     data.insert("entity_id".into(), entity_id.into());
-
-    //     let api_res = api
-    //         .call_services("light".into(), "turn_on".into(), Some(data))
-    //         .await
-    //         .context(format!(
-    //             "Failed to submit colors to Home Assistant for entity {}",
-    //             entity_id
-    //         ));
-    // }
-
-    if let Err(e) = api_res {
-        p.fail();
-        return Err(e);
-    }
-
-    p.success();
-
-    Ok(final_colors)
+    Ok(apply_color_mode(
+        dominant_colors,
+        &config.mode,
+        &config.hue_shift,
+    ))
 }
 
 fn apply_color_mode(

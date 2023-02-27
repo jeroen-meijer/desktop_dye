@@ -17,6 +17,27 @@ ha_token:
 # Is required. If not specified, the application will not start.
 ha_target_entity_id:
 
+# The amount of colors to sample and send to Home Assistant.
+#
+# Note that, depending on the algorithm used, the amount of colors sent may be less than
+# this value.
+#
+# Is optional. If not specified, the application will sample 3 colors per capture.
+# Must be between 1 and 10 (inclusive).
+sample_size: 3
+
+# The algorithm to use to select the colors to send to Home Assistant.
+#
+# There are two algorithms:
+# - 'color_thief': A fast algorithm that selects the most dominant colors.
+#   This is the default algorithm, and is relatively accurate for most use cases.
+# - 'pigmnts': A slower algorithm based on the kmeans-algorithm that selects the
+#    most dominant colors. Though generally slightly more accurate, it is also
+#    significantly slower and not recommended for most use cases.
+#
+# Is optional. If not specified, the default 'color_thief' algorithm is used.
+algorithm: color_thief
+
 # The amount of seconds to wait between color captures.
 #
 # In other words, every this many seconds, the application will capture the colors on the

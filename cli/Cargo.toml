@@ -1,0 +1,32 @@
+[package]
+name = "desktop_dye_cli"
+version = "0.1.1"
+edition = "2021"
+authors = ["Jeroen Meijer <jeroenfkmeijer@gmail.com>"]
+description = "A tool to generate color palettes from your desktop wallpaper and send them to Home Assistant."
+repository = "https://github.com/jeroen-meijer/desktop_dye"
+license = "MIT"
+readme = "README.md"
+keywords = [
+  "home_assistant",
+  "color",
+  "palette",
+  "wallpaper",
+  "ambilight",
+  "desktop",
+  "dye",
+]
+default-run = "desktop_dye_cli"
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0.69"
+chrono = "0.4.23"
+colored = "2.0.0"
+desktop_dye_api = { version = "0.1.1", path = "../api" }
+home_assistant_api = { version = "0.1.0", path = "../home_assistant_api" }
+prisma = "0.1.1"
+rand = "0.8.5"
+screenshots = "0.5.2"
+spinners = "4.1.0"
+tokio = { version = "1.25.0", features = ["full"] }

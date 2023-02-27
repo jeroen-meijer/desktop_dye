@@ -1,17 +1,17 @@
-mod config;
-mod functions;
 mod progress;
 
 use anyhow::*;
 use colored::Colorize;
-use config::DesktopDyeConfig;
-use functions::*;
+use desktop_dye_api::{
+    config::DesktopDyeConfig,
+    functions::{get_colors_from_screen, ToHex},
+};
 use home_assistant_api::{HomeAssistantApi, HomeAssistantConfig};
-use prisma::Rgb;
+use prisma::{Lerp, Rgb};
 use progress::Progress;
+use rand::Rng;
 use screenshots::Screen;
 
-const NUM_COLORS: u8 = 3;
 const MAX_FAILURES: u8 = 3;
 
 #[tokio::main]
@@ -126,4 +126,109 @@ async fn main() -> Result<()> {
             tokio::time::sleep(std::time::Duration::from_secs_f64(seconds_remaining)).await;
         }
     }
+}
+
+async fn capture_and_submit(
+    api: &HomeAssistantApi,
+    config: &DesktopDyeConfig,
+    screen: &Screen,
+    last_colors: Option<&Vec<Rgb<u8>>>,
+) -> Result<Vec<Rgb<u8>>> {
+    let mut p = Progress::new("Getting colors from screen");
+    let colors_res = get_colors_from_screen(config, screen).await;
+    if let Err(e) = colors_res {
+        p.fail();
+        return Err(e);
+    }
+    p.success();
+    let colors = colors_res.unwrap();
+
+    if let Some(last_colors) = last_colors {
+        if last_colors == &colors {
+            println!("Colors haven't changed, skipping submission");
+            return Ok(colors);
+        }
+    }
+
+    for color in &colors {
+        println!(
+            "  - {}",
+            format!(
+                "#{} ({}, {}, {})",
+                color.to_hex(),
+                color.red(),
+                color.green(),
+                color.blue(),
+            )
+            .bold()
+            .white()
+            .on_truecolor(color.red(), color.green(), color.blue())
+            .to_string()
+        );
+    }
+
+    let colors_payload = &colors
+        .iter()
+        .map(|color| format!("{},{},{}", color.red(), color.green(), color.blue()))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    println!("Sending colors value: \"{}\"", colors_payload);
+
+    let mut p = Progress::new("Submitting colors to Home Assistant");
+    let api_res = api
+        .set_state(
+            config.ha_target_entity_id.to_owned(),
+            colors_payload.clone(),
+            None,
+            true,
+        )
+        .await
+        .context("Failed to submit colors to Home Assistant");
+
+    if let Err(e) = api_res {
+        p.fail();
+        return Err(e);
+    }
+
+    p.success();
+
+    Ok(colors)
+}
+
+fn print_title() {
+    const PACKAGE_NAME: &str = "DesktopDye";
+    let mut possible_colors = vec![
+        Rgb::new(152, 31, 172),
+        Rgb::new(255, 0, 106),
+        Rgb::new(0, 140, 255),
+        Rgb::new(255, 140, 0),
+    ];
+    let mut rng = rand::thread_rng();
+    let start_color = possible_colors.remove(rng.gen_range(0..possible_colors.len()));
+    let end_color = possible_colors.remove(rng.gen_range(0..possible_colors.len()));
+
+    let chars = PACKAGE_NAME.chars().collect::<Vec<_>>();
+    let char_count = chars.len();
+    let colors = (0..char_count)
+        .map(|i| start_color.lerp(&end_color, i as f64 / char_count as f64))
+        .collect::<Vec<_>>();
+
+    let colored_package_name = chars
+        .into_iter()
+        .zip(colors.into_iter())
+        .map(|(c, color)| {
+            c.to_string()
+                .on_truecolor(color.red(), color.green(), color.blue())
+                .to_string()
+        })
+        .collect::<String>()
+        .bold()
+        .truecolor(255, 255, 255);
+
+    println!(
+        "\n{} v{}\n",
+        colored_package_name,
+        env!("CARGO_PKG_VERSION")
+    );
 }
