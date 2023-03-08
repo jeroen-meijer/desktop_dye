@@ -119,11 +119,13 @@ async fn main() -> Result<()> {
 
             let seconds_remaining =
                 config.capture_interval - last_submission_time.elapsed().as_secs_f64();
-            println!(
-                "Waiting {} second(s) for next capture ({:.2}s remaining)...",
-                config.capture_interval, seconds_remaining
-            );
-            tokio::time::sleep(std::time::Duration::from_secs_f64(seconds_remaining)).await;
+            if seconds_remaining > 0.0 {
+                println!(
+                    "Waiting {} second(s) for next capture ({:.2}s remaining)...",
+                    config.capture_interval, seconds_remaining
+                );
+                tokio::time::sleep(std::time::Duration::from_secs_f64(seconds_remaining)).await;
+            }
         }
     }
 }
