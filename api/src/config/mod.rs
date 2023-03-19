@@ -15,6 +15,7 @@ pub const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
 pub const DEFAULT_COLOR_SELECTION_MODE: ColorSelectionMode = ColorSelectionMode::Default;
 pub const DEFAULT_HUE_SHIFT: f64 = 45.0;
 pub const DEFAULT_COLOR_FORMAT: ColorFormat = ColorFormat::Rgb;
+pub const DEFAULT_BRIGHTNESS_FACTOR: f64 = 1.0;
 
 pub const SAMPLE_SIZE_RANGE: std::ops::RangeInclusive<u8> = 1..=10;
 
@@ -31,6 +32,7 @@ pub struct DesktopDyeConfig {
     pub mode: ColorSelectionMode,
     pub hue_shift: f64,
     pub color_format: ColorFormat,
+    pub brightness_factor: f64,
 }
 
 impl DesktopDyeConfig {
@@ -117,6 +119,9 @@ impl DesktopDyeConfig {
             mode: optional_config.mode.unwrap_or(DEFAULT_COLOR_SELECTION_MODE),
             hue_shift: optional_config.hue_shift.unwrap_or(DEFAULT_HUE_SHIFT),
             color_format: optional_config.color_format.unwrap_or(DEFAULT_COLOR_FORMAT),
+            brightness_factor: optional_config
+                .brightness_factor
+                .unwrap_or(DEFAULT_BRIGHTNESS_FACTOR),
         })
     }
 
@@ -228,4 +233,14 @@ pub enum ColorFormat {
     Rgbb,
     #[serde(rename = "hsb")]
     Hsb,
+}
+
+impl Display for ColorFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ColorFormat::Rgb => write!(f, "RGB"),
+            ColorFormat::Rgbb => write!(f, "RGBB"),
+            ColorFormat::Hsb => write!(f, "HSB"),
+        }
+    }
 }

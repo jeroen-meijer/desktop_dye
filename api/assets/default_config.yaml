@@ -63,7 +63,7 @@ mode: default
 
 # Determines the amount of degrees of shift to use when selecting hues.
 #
-# This is only used when the mode is set to 'hue_shift'.
+# This is only used when the mode is set to 'hues'.
 #
 # This value is used to shift the primary color to the left and right, creating a gradient.
 # For example, if this is set to 45.0, the primary color will be shifted 45 degrees to the
@@ -81,16 +81,38 @@ hue_shift: 45.0
 #   and are integers in the range of 0-255 (inclusive).
 #   Example: "255,255,0 255,0,0 0,255,0"
 # - `rgbb`: The colors are sent as a comma-separated list of RGB values, with a brightness
-#   component at the end. All values are integers in the range of 0-255 (inclusive).
-#   Example: "255,255,0,255 255,0,0,255 0,255,0,128"
+#   component at the end. The RGB values are integers in the range of 0-255 (inclusive), while
+#   the brightness value is a float in the range of 0.0-100.0 (inclusive).
+#   This is useful since Home Assistant devices generally don't support setting the brightness
+#   through the RGB values, and instead require a separate brightness value.
+#   Example: "255,255,0,100.0 255,0,0,100.0 0,255,0,100.0"
 # - `hsb`: The colors are sent as a comma-separated list of HSB (hue, saturation, brightness)
 #   values. While this format is more accurate, it is also more difficult to work with in
 #   Home Assistant, and can lead to unexpected results in color accuracy. However, this is
 #   the only format that supports setting a specific brightness for Home Assistant lights,
 #   which the RGB format does not support.
-#   HSB values are in the range of floats 0.0-360.0 for hue, floats 0.0-100.0 for saturation,
-#   and integers 0-255 for brightness (all inclusive).
-#   Example: "60.0,100.0,255 0.0,100.0,255 180.0,100.0,127"
+#   HSB values are in the range of floats 0.0-360.0 for hue and floats 0.0-100.0 for the
+#   saturation and brightness.
+#   Example: "60.0,100.0,100.0 0.0,100.0,100.0 120.0,100.0,100.0"
 #
 # Is optional. If not specified, the default format (`rgb`) is used.
 color_format: rgb
+
+# Determines the factor by which to increase the brightness of every color.
+#
+# If provided, the brightness of every color is multiplied by this value. This
+# is useful if the colors are too dark, or if the brightness of the colors is
+# not sufficient for your lighting setup.
+#
+# Note that brightness values are clamped to the range of 0.0-100.0 (inclusive).
+# Setting this value lower than 1.0 will decrease the brightness of the colors,
+# while setting it to 0.0 will result in all colors being black.
+#
+# Example:
+# - brightness_factor = 0.5, base brightness = 50.0, result = 25.0
+# - brightness_factor = 2.0, base brightness = 50.0, result = 100.0
+# - brightness_factor = 2.0, base brightness = 75.0, result = 100.0 (clamped)
+#
+# Is optional. If not specified, it is set to 1.0, which means no brightness
+# adjustment is performed.
+brightness_factor: 1.0

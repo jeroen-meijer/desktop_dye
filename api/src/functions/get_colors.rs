@@ -39,7 +39,7 @@ pub async fn get_colors_from_screen(
     let most_dominant_color = dominant_colors[0];
     println!(
         "Dominant color: {}",
-        format!("#{}", most_dominant_color.to_hex())
+        format!("#{}", most_dominant_color.to_hex_value())
             .bold()
             .white()
             .on_truecolor(
@@ -50,19 +50,21 @@ pub async fn get_colors_from_screen(
             .to_string()
     );
 
-    Ok(apply_color_mode(
+    Ok(apply_color_correction(
         dominant_colors,
         &config.mode,
         &config.hue_shift,
+        &config.brightness_factor,
     ))
 }
 
-fn apply_color_mode(
+fn apply_color_correction(
     colors: Vec<HsvColor>,
     mode: &ColorSelectionMode,
     hue_shift: &f64,
+    brightness_factor: &f64,
 ) -> Vec<HsvColor> {
-    match mode {
+    let mode_adjusted_colors = match mode {
         crate::config::ColorSelectionMode::Default => colors,
         crate::config::ColorSelectionMode::Brightness => {
             let bright_colors = colors
@@ -103,43 +105,37 @@ fn apply_color_mode(
             let lower_hue = primary_hsv.hue().0 - hue_shift;
             let hue_step = hue_shift * 2.0 / (colors_len - 1) as f64;
 
-            // let mut final_colors = vec![];
+            let mut final_colors = vec![];
 
-            // for i in 0..colors_len {
-            //     let hue = lower_hue + hue_step * i as f64;
-            //     let hue = if hue < 0.0 {
-            //         hue + 360.0
-            //     } else if hue > 360.0 {
-            //         hue - 360.0
-            //     } else {
-            //         hue
-            //     };
+            for i in 0..colors_len {
+                let hue = lower_hue + hue_step * i as f64;
+                let hue = if hue < 0.0 {
+                    hue + 360.0
+                } else if hue > 360.0 {
+                    hue - 360.0
+                } else {
+                    hue
+                };
 
-            //     let hsv = Hsv::new(Deg(hue), primary_hsv.saturation(), primary_hsv.value());
+                let hsv = Hsv::new(Deg(hue), primary_hsv.saturation(), primary_hsv.value());
 
-            //     final_colors.push(hsv);
-            // }
+                final_colors.push(hsv);
+            }
 
-            // final_colors
-
-            return colors
-                .into_iter()
-                .enumerate()
-                .map(|(i, color)| {
-                    let hue = lower_hue + hue_step * i as f64;
-                    let hue = if hue < 0.0 {
-                        hue + 360.0
-                    } else if hue > 360.0 {
-                        hue - 360.0
-                    } else {
-                        hue
-                    };
-
-                    let hsv = Hsv::new(Deg(hue), color.saturation(), color.value());
-
-                    hsv
-                })
-                .collect();
+            final_colors
         }
+    };
+
+    if brightness_factor == &1.0 {
+        return mode_adjusted_colors;
     }
+
+    mode_adjusted_colors
+        .into_iter()
+        .map(|color| {
+            let mut hsv = color;
+            hsv.set_value((hsv.value() * brightness_factor).min(1.0));
+            hsv
+        })
+        .collect()
 }
