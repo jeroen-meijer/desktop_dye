@@ -14,6 +14,7 @@ pub const DEFAULT_ALGORITHM: DominantColorAlgorithm = DominantColorAlgorithm::Co
 pub const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
 pub const DEFAULT_COLOR_SELECTION_MODE: ColorSelectionMode = ColorSelectionMode::Default;
 pub const DEFAULT_HUE_SHIFT: f64 = 45.0;
+pub const DEFAULT_COLOR_FORMAT: ColorFormat = ColorFormat::Rgb;
 
 pub const SAMPLE_SIZE_RANGE: std::ops::RangeInclusive<u8> = 1..=10;
 
@@ -29,6 +30,7 @@ pub struct DesktopDyeConfig {
     pub capture_interval: f64,
     pub mode: ColorSelectionMode,
     pub hue_shift: f64,
+    pub color_format: ColorFormat,
 }
 
 impl DesktopDyeConfig {
@@ -114,6 +116,7 @@ impl DesktopDyeConfig {
                 .unwrap_or(DEFAULT_CAPTURE_INTERVAL),
             mode: optional_config.mode.unwrap_or(DEFAULT_COLOR_SELECTION_MODE),
             hue_shift: optional_config.hue_shift.unwrap_or(DEFAULT_HUE_SHIFT),
+            color_format: optional_config.color_format.unwrap_or(DEFAULT_COLOR_FORMAT),
         })
     }
 
@@ -215,4 +218,14 @@ pub enum DominantColorAlgorithm {
     ColorThief,
     #[serde(rename = "pigmnts")]
     Pigmnts,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub enum ColorFormat {
+    #[serde(rename = "rgb")]
+    Rgb,
+    #[serde(rename = "rgbb")]
+    Rgbb,
+    #[serde(rename = "hsb")]
+    Hsb,
 }

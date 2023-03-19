@@ -2,7 +2,9 @@ use anyhow::*;
 use prisma::Rgb;
 use screenshots::Screen;
 
-pub fn capture_pixels(screen: &Screen) -> Result<Vec<Rgb<u8>>> {
+use crate::models::colors::RgbColor;
+
+pub fn capture_pixels(screen: &Screen) -> Result<Vec<RgbColor>> {
     let image = screen.capture()?;
     let raw_png_buffer = image.buffer();
 

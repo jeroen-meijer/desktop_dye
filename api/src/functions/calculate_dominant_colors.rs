@@ -1,20 +1,20 @@
 use lab::Lab;
 use prisma::Rgb;
 
-use crate::config::DominantColorAlgorithm;
+use crate::{config::DominantColorAlgorithm, models::colors::RgbColor};
 
 pub fn calculate_dominant_colors(
-    pixels: &Vec<Rgb<u8>>,
+    pixels: &Vec<RgbColor>,
     alg: &DominantColorAlgorithm,
     sample_size: &u8,
-) -> Vec<Rgb<u8>> {
+) -> Vec<RgbColor> {
     match alg {
         DominantColorAlgorithm::Pigmnts => pigmnts_alg(pixels, *sample_size),
         DominantColorAlgorithm::ColorThief => color_thief_alg(pixels, *sample_size),
     }
 }
 
-fn pigmnts_alg(pixels: &Vec<Rgb<u8>>, sample_size: u8) -> Vec<Rgb<u8>> {
+fn pigmnts_alg(pixels: &Vec<RgbColor>, sample_size: u8) -> Vec<RgbColor> {
     let lab_values = pixels
         .iter()
         .map(|rgb| pigmnts::color::LAB::from_rgb(rgb.red(), rgb.green(), rgb.blue()))
@@ -49,7 +49,7 @@ fn pigmnts_alg(pixels: &Vec<Rgb<u8>>, sample_size: u8) -> Vec<Rgb<u8>> {
     colors.into_iter().map(|(rgb, _)| rgb).collect()
 }
 
-fn color_thief_alg(pixels: &Vec<Rgb<u8>>, sample_size: u8) -> Vec<Rgb<u8>> {
+fn color_thief_alg(pixels: &Vec<RgbColor>, sample_size: u8) -> Vec<RgbColor> {
     let colors_res = color_thief::get_palette(
         &pixels
             .iter()

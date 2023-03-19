@@ -4,7 +4,8 @@ use anyhow::*;
 use colored::Colorize;
 use desktop_dye_api::{
     config::DesktopDyeConfig,
-    functions::{get_colors_from_screen, ToHex},
+    functions::{get_colors_from_screen, ToHex, ToRgb},
+    models::colors::{HomeAssistantHsbColor, HsvColor},
 };
 use home_assistant_api::{HomeAssistantApi, HomeAssistantConfig};
 use prisma::{Lerp, Rgb};
@@ -99,7 +100,7 @@ async fn main() -> Result<()> {
 
     let mut failures = 0;
     let mut last_submission_time: std::time::Instant;
-    let mut last_colors: Option<Vec<Rgb<u8>>> = None;
+    let mut last_colors: Option<Vec<HsvColor>> = None;
 
     loop {
         last_submission_time = std::time::Instant::now();
@@ -134,8 +135,8 @@ async fn capture_and_submit(
     api: &HomeAssistantApi,
     config: &DesktopDyeConfig,
     screen: &Screen,
-    last_colors: Option<&Vec<Rgb<u8>>>,
-) -> Result<Vec<Rgb<u8>>> {
+    last_colors: Option<&Vec<HsvColor>>,
+) -> Result<Vec<HsvColor>> {
     let mut p = Progress::new("Getting colors from screen");
     let colors_res = get_colors_from_screen(config, screen).await;
     if let Err(e) = colors_res {
@@ -152,30 +153,94 @@ async fn capture_and_submit(
         }
     }
 
-    for color in &colors {
+    for (i, color) in colors.iter().enumerate() {
+        let rgb_color = color.to_rgb();
+        print!("  {}. ", i + 1);
+
+        let hex = format!("#{}", color.to_hex());
+        let formatted = match config.color_format {
+            desktop_dye_api::config::ColorFormat::Rgb => {
+                format!(
+                    "RGB({}, {}, {})",
+                    rgb_color.red(),
+                    rgb_color.green(),
+                    rgb_color.blue()
+                )
+            }
+            desktop_dye_api::config::ColorFormat::Rgbb => {
+                format!(
+                    "RGBB({},{},{},{})",
+                    rgb_color.red(),
+                    rgb_color.green(),
+                    rgb_color.blue(),
+                    HomeAssistantHsbColor::from(*color).brightness
+                )
+            }
+            desktop_dye_api::config::ColorFormat::Hsb => {
+                format!(
+                    "H: {:.3}°, S: {:.3}, B: {:.3}",
+                    color.hue().0,
+                    color.saturation(),
+                    color.value(),
+                )
+            }
+        };
+
+        let foreground_color = if color.value() > 0.5 {
+            colored::Color::Black
+        } else {
+            colored::Color::White
+        };
+
         println!(
-            "  - {}",
-            format!(
-                "#{} ({}, {}, {})",
-                color.to_hex(),
-                color.red(),
-                color.green(),
-                color.blue(),
-            )
-            .bold()
-            .white()
-            .on_truecolor(color.red(), color.green(), color.blue())
-            .to_string()
+            "{}",
+            format!("{} ({})", hex, formatted)
+                .bold()
+                .color(foreground_color)
+                .on_truecolor(rgb_color.red(), rgb_color.green(), rgb_color.blue())
+                .to_string()
         );
+
+        // .bold()
+        // .white()
+        // .on_truecolor(rgb_color.red(), rgb_color.green(), rgb_color.blue())
+        // .to_string()
     }
 
-    let colors_payload = &colors
-        .iter()
-        .map(|color| format!("{},{},{}", color.red(), color.green(), color.blue()))
+    let colors_payload = colors
+        .clone()
+        .into_iter()
+        .map(|color| match config.color_format {
+            desktop_dye_api::config::ColorFormat::Rgb => {
+                let rgb = color.to_rgb();
+                format!("{},{},{}", rgb.red(), rgb.green(), rgb.blue())
+            }
+            desktop_dye_api::config::ColorFormat::Rgbb => {
+                let rgb = color.to_rgb();
+                format!(
+                    "{},{},{},{}",
+                    rgb.red(),
+                    rgb.green(),
+                    rgb.blue(),
+                    HomeAssistantHsbColor::from(color).brightness
+                )
+            }
+            desktop_dye_api::config::ColorFormat::Hsb => {
+                HomeAssistantHsbColor::from(color).to_desktop_dye_hsb_string()
+            }
+        })
         .collect::<Vec<_>>()
         .join(" ");
 
-    println!("Sending colors value: \"{}\"", colors_payload);
+    println!(
+        "Sending colors value ({}): \"{}\"",
+        match config.color_format {
+            desktop_dye_api::config::ColorFormat::Rgb => "RGB",
+            desktop_dye_api::config::ColorFormat::Rgbb => "RGBB",
+            desktop_dye_api::config::ColorFormat::Hsb => "HSB",
+        },
+        colors_payload
+    );
 
     let mut p = Progress::new("Submitting colors to Home Assistant");
     let api_res = api
