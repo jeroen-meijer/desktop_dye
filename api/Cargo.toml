@@ -1,6 +1,6 @@
 [package]
 name = "desktop_dye_api"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Jeroen Meijer <jeroenfkmeijer@gmail.com>"]
 description = "An API to generate color palettes from your desktop wallpaper and send them to Home Assistant."

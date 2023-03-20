@@ -77,11 +77,12 @@ hue_shift: 45.0
 #
 # There are two formats:
 # - 'rgb': The colors are sent as a comma-separated list of RGB values.
-#   This is the default format. RGB values consist of three components, red, green, and blue,
+#   RGB values consist of three components; red, green, and blue,
 #   and are integers in the range of 0-255 (inclusive).
 #   Example: "255,255,0 255,0,0 0,255,0"
 # - `rgbb`: The colors are sent as a comma-separated list of RGB values, with a brightness
-#   component at the end. The RGB values are integers in the range of 0-255 (inclusive), while
+#   component at the end. This is the default format.
+#   The RGB values are integers in the range of 0-255 (inclusive), while
 #   the brightness value is a float in the range of 0.0-100.0 (inclusive).
 #   This is useful since Home Assistant devices generally don't support setting the brightness
 #   through the RGB values, and instead require a separate brightness value.
@@ -95,8 +96,8 @@ hue_shift: 45.0
 #   saturation and brightness.
 #   Example: "60.0,100.0,100.0 0.0,100.0,100.0 120.0,100.0,100.0"
 #
-# Is optional. If not specified, the default format (`rgb`) is used.
-color_format: rgb
+# Is optional. If not specified, the default format (`rgbb`) is used.
+color_format: rgbb
 
 # Determines the factor by which to increase the brightness of every color.
 #

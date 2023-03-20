@@ -14,7 +14,7 @@ pub const DEFAULT_ALGORITHM: DominantColorAlgorithm = DominantColorAlgorithm::Co
 pub const DEFAULT_CAPTURE_INTERVAL: f64 = 3.0;
 pub const DEFAULT_COLOR_SELECTION_MODE: ColorSelectionMode = ColorSelectionMode::Default;
 pub const DEFAULT_HUE_SHIFT: f64 = 45.0;
-pub const DEFAULT_COLOR_FORMAT: ColorFormat = ColorFormat::Rgb;
+pub const DEFAULT_COLOR_FORMAT: ColorFormat = ColorFormat::Rgbb;
 pub const DEFAULT_BRIGHTNESS_FACTOR: f64 = 1.0;
 
 pub const SAMPLE_SIZE_RANGE: std::ops::RangeInclusive<u8> = 1..=10;
